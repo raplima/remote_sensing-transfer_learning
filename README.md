@@ -1,1 +1,1 @@
-# remore_sensing-transfer_learning
+# remote_sensing-transfer_learning
