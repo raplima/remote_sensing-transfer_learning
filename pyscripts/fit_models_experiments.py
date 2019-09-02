@@ -11,6 +11,7 @@ from keras import applications
 from keras.models import Model, Sequential, load_model
 from keras.layers import GlobalAveragePooling2D, Dense, Dropout
 from keras.optimizers import SGD
+from keras import optimizers 
 from keras.preprocessing.image import ImageDataGenerator
 
 import pandas as pd
@@ -233,16 +234,18 @@ def train_frozen(model_name, depth_level, weights,
     # clear memory
     reset_keras()
     
-    return acc, cfm
+    return acc, cfm, history
 
 def fine_tune(model_filename, model_name, depth_level,
               data_in,
               train_dir, valid_dir, test_dir, 
               image_dir, 
               model_dir,
-              epochs):
+              epochs, 
+              opt):
     """
     function that fine tunes a pre-trained cnn model using a small learning rate
+    or trains a model from scracth
     :param model_filename: filename of hdf5 file (Keras model) to be loaded
     :param model_name: name of the original cnn model - necessary for preprocessing
         (currently only supports InceptionV3 and VGG19)
@@ -254,13 +257,13 @@ def fine_tune(model_filename, model_name, depth_level,
     :image_dir: image output location
     :model_dir: model output location
     :epochs: number of epochs to train
+    :opt:   keras optmizer to be used for training
     :return: 
         the entire trained model
         the test set accuracy
         the test set confusion matrix
     also saves a plot of the training loss/accuracy
     """
-    reset_keras()
     ########
     # common trainig parameters:
     ########
@@ -271,19 +274,27 @@ def fine_tune(model_filename, model_name, depth_level,
     # save the number of classes:
     num_classes = len(os.listdir(train_dir))
     
+    opts = {'SGD (1e-2)'              : optimizers.SGD(lr=0.01, momentum=0.0, clipvalue=5.), 
+        'SGD (1e-2) momentum 0.5' : optimizers.SGD(lr=0.01, momentum=0.5, clipvalue=5.), 
+        'SGD (1e-2) momentum 0.9' : optimizers.SGD(lr=0.01, momentum=0.9, clipvalue=5.), 
+        'SGD (1e-3)'              : optimizers.SGD(lr=0.001, momentum=0.0, clipvalue=5.), 
+        'SGD (1e-3) momentum 0.5' : optimizers.SGD(lr=0.001, momentum=0.5, clipvalue=5.), 
+        'SGD (1e-3) momentum 0.9' : optimizers.SGD(lr=0.001, momentum=0.9, clipvalue=5.), 
+        'RMSprop (1e-3) '         : optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0),
+        'Adam (1e-2)'             : optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
+        'Adamax (2e-3)'           : optimizers.Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
+        }
+    opt = opts[opt]
+    
     if model_filename:
         # user provided a filename of a model saved with weights
         tag = 'fine_tune'
-        lrate = 1e-4
-        opt = SGD(lr=lrate, momentum=0.9, clipvalue=5.)
         # load the model:
         model = load_model(os.path.join(model_dir, model_filename))
     else:
         print('starting new model with random weights')
 
         tag = 'randomly_initialized_weights'
-        lrate = 1e-3
-        opt = SGD(lr=lrate, momentum=0.9, clipvalue=5.)
         # we start a model from scratch
         base_model = load_part_model(model_name, depth_level, None)
    
@@ -307,7 +318,7 @@ def fine_tune(model_filename, model_name, depth_level,
     
     # set the generator
     datagen = ImageDataGenerator(preprocessing_function=model_preprocess(model_name))
-    
+
     # do the same thing for both training and validation:    
     train_generator = datagen.flow_from_directory(
         train_dir,
@@ -385,7 +396,7 @@ def fine_tune(model_filename, model_name, depth_level,
     # clear memory
     reset_keras()
 
-    return acc, cfm
+    return acc, cfm, history
 
 
 if __name__ == "__main__":
@@ -395,6 +406,7 @@ if __name__ == "__main__":
     data_dir = '../data'
     image_dir = '../images'
     model_dir = '../models'
+    
     datasets_dir = [os.path.join(data_dir, 'PatternNet'), 
                     os.path.join(data_dir, 'AID'),
                     os.path.join(data_dir, 'UCMerced'),]
@@ -419,7 +431,7 @@ if __name__ == "__main__":
                 train_dir = os.path.join(dataset, 'images_train')
                 valid_dir = os.path.join(dataset, 'images_validation')
                 test_dir  = os.path.join(dataset, 'images_test')
-                acc, _ = train_frozen(model, 
+                acc, _, _ = train_frozen(model, 
                                          depth_level, 
                                          weights, 
                                          data_in,
@@ -441,14 +453,17 @@ if __name__ == "__main__":
                 ###############################################################
                 # fine tune:
                 model_filename = f"{model}_{depth_level}_{data_in}_frozen.hdf5"
-                acc, _ = fine_tune(model_filename, model, depth_level,
+                lrate = 1e-4
+                opt = SGD(lr=lrate, momentum=0.9, clipvalue=5.)
+                acc, _, _ = fine_tune(model_filename, model, depth_level,
                                              data_in,
                                              train_dir,
                                              valid_dir, 
                                              test_dir, 
                                              image_dir, 
                                              model_dir,
-                                             epochs_random_init)
+                                             epochs, 
+                                             opt)
                 
                 print(f'{acc:.2f}')
                 acc_dict[dict_counter]={"model"   :model,
@@ -461,15 +476,17 @@ if __name__ == "__main__":
                 ###############################################################
                 # random initialization:
                 model_filename = None
-                acc, _ = fine_tune(model_filename, model, depth_level,
+                lrate = 1e-3
+                opt = SGD(lr=lrate, momentum=0.9, clipvalue=5.)
+                acc, _, _ = fine_tune(model_filename, model, depth_level,
                                              data_in,
                                              train_dir,
                                              valid_dir, 
                                              test_dir, 
                                              image_dir, 
                                              model_dir,
-                                             epochs_random_init)
-                
+                                             epochs_random_init, 
+                                             opt)
                 print(f'{acc:.2f}')
                 acc_dict[dict_counter]={"model"   :model,
                                          "depth"   :depth_level,
@@ -478,6 +495,11 @@ if __name__ == "__main__":
                                          "accuracy":acc}
                 dict_counter+=1
                 reset_keras()
+                
+                # convert accuracy to dataframe    
+                df_acc = pd.DataFrame.from_dict(acc_dict, orient='index',)
+                # save dataframe:
+                df_acc.to_csv(os.path.join(data_dir, 'df_accuracy.csv'))
                 
     # print accuracy results
     for k in acc_dict:
