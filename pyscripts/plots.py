@@ -17,6 +17,9 @@ def plot_history(history, model_name, depth_level, data_in, tag, image_dir, dpi=
     plots and saves a figure with trainig and validation loss from the 
     """
     plt.style.use('fivethirtyeight')
+    #sns.set_style("whitegrid")
+    sns.set_context("paper")
+
     # plotting the metrics
     fig, ax = plt.subplots(nrows=2, ncols=1, constrained_layout=True)
     ax[0].plot(range(1, len(history.history['acc']) + 1), history.history['acc'])
@@ -35,9 +38,11 @@ def plot_history(history, model_name, depth_level, data_in, tag, image_dir, dpi=
     ax[1].legend(['Train', 'Validation'], loc='upper right')
 
     # set up figure
-    fig.set_size_inches(w=5, h=7)
+    fig.set_size_inches(w=3, h=5)
 
-    plt.savefig(os.path.join(image_dir, f"{data_in}_{model_name}_{depth_level}_{tag}.png"), dpi=dpi)
+    plt.savefig(os.path.join(image_dir, f"{data_in}_{model_name}_{depth_level}_{tag}.png"), 
+                facecolor="white",
+                dpi=dpi)
     plt.clf()
     plt.close()
 
@@ -51,7 +56,9 @@ def cf_matrix(y_true, y_pred, image_dir, plot_name='confusion_matrix', dpi=200):
     :param dpi: dots per inch
     :return: saves image file
     """
-
+    plt.style.use('fivethirtyeight')
+    #sns.set_style("whitegrid")
+    sns.set_context("paper")
     # get the unique labels
     labels = sorted(set(np.concatenate([y_true, y_pred])))
 
@@ -82,6 +89,8 @@ def cf_matrix(y_true, y_pred, image_dir, plot_name='confusion_matrix', dpi=200):
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.tight_layout()
-    plt.savefig(os.path.join(image_dir, f"{plot_name}.png"), dpi=dpi)
+    plt.savefig(os.path.join(image_dir, f"{plot_name}.png"), 
+                facecolor="white",
+                dpi=dpi)
     plt.clf()
     plt.close()

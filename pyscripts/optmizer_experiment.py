@@ -13,6 +13,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from keras import optimizers
+from tensorflow import set_random_seed
 
 from matplotlib import pyplot as plt
 import seaborn as sns
@@ -20,12 +21,14 @@ import seaborn as sns
 from fit_models_experiments import fine_tune
 from helper import reset_keras
 
-plt.style.use('fivethirtyeight')
-
 
 if __name__ == "__main__":
+
     # set the seed for repetition purposes 
     random.seed(0)
+    np.random.seed(0)
+    set_random_seed(0)
+
 
     data_dir = '../data'
     image_dir = '../images'
@@ -51,7 +54,7 @@ if __name__ == "__main__":
             'Adam (1e-2)'             : optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
             'Adamax (2e-3)'           : optimizers.Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
             }
-    epochs_random_init = 2
+    epochs_random_init = 100
     
     # test different models:
     acc_dict={}
@@ -86,7 +89,7 @@ if __name__ == "__main__":
                                         "opt_mode":opt.split(' ')[0],
                                         "mode"    :'randomly initialized weights',
                                         "accuracy":acc}
-                hist_dict[f'{depth_level}_{opt}']={'train_acc' : history.history['acc'], 
+                hist_dict[f'{model}_{depth_level}_{opt}']={'train_acc' : history.history['acc'], 
                                                    'val_acc' : history.history['val_acc'], 
                                                    'train_loss': history.history['loss'], 
                                                    'val_loss': history.history['val_loss'],
@@ -95,7 +98,7 @@ if __name__ == "__main__":
                                                    'depth': depth_level, 
                                                    'optmizer' : opt}
                          
-                         
+                print(f'{model}_{depth_level}_{opt} okay')
                 dict_counter+=1
                 reset_keras()
                 
@@ -105,14 +108,28 @@ if __name__ == "__main__":
     
     # convert accuracy to dataframe    
     df_acc = pd.DataFrame.from_dict(acc_dict, orient='index',)
+    # change column names to facilitate legends:
+    df_acc = df_acc.rename(columns={"opt": "optmizer parameters", 
+                           "opt_mode": "optmizer"}
+                    )
     
     # plot accuracy:
-    plt.figure(figsize=(2, 2), )
-    sns.relplot(x="depth", y="accuracy", hue="opt", style="opt_mode", 
+    plt.style.use('seaborn-paper')
+    plt.figure(figsize=(4, 4), )
+    g = sns.catplot(x="depth", y="accuracy", hue="optmizer parameters",
+                    col="model",
+                    s = 10,  kind="swarm",
+                    legend='full', alpha=.75,
+                    data=df_acc)
+    """
+    g=sns.relplot(x="depth", y="accuracy", hue="optmizer parameters", style="optmizer", 
                     col="model",
                     s = 200,
-                    legend='brief', alpha=.75,
+                    legend='full', alpha=.75,
                     data=df_acc)
+    """
+    for c in range(g.axes.shape[1]):
+        g.axes[0,c].set_title(g.axes[0,c].get_title().split(' = ')[1]) 
     plt.savefig(os.path.join(image_dir, 'accuracy_opt.png'), dpi=1000)
     plt.close('all')
     
@@ -121,21 +138,33 @@ if __name__ == "__main__":
     for h in hist_dict:
         hist_df = hist_df.append(pd.DataFrame.from_dict(hist_dict[h], orient='columns'))
     
-    melt_df=pd.melt(hist_df, id_vars = ['depth', 'optmizer', 'epoch'])
+    melt_df=pd.melt(hist_df, id_vars = ['model', 'depth', 'optmizer', 'epoch'])
     melt_df[['set', 'metric']] = melt_df['variable'].str.split('_', expand=True)
     melt_df['set'].replace('val', 'validation', inplace=True)
     melt_df['metric'].replace('acc', 'accuracy', inplace=True)
+    melt_df = melt_df.rename(columns={"optmizer": "optmizer parameters"}
+                )
+    melt_df = melt_df[melt_df['metric']=='accuracy'].copy()
     # plot losses:
-    plt.figure(figsize=(12, 12), )
-    g = sns.relplot(x="epoch", y="value", hue="optmizer", style="set", 
-                 col='model', row="metric", kind="line", ci=None, 
-                 #s = 200,
-                 legend='brief', alpha=.75,
+    plt.style.use('fivethirtyeight')
+    #sns.set_style("whitegrid")
+    sns.set_context("paper")
+
+    g = sns.relplot(x="epoch", y="value", hue="optmizer parameters", style="set", 
+                 col='model', row="depth", kind="line", ci=None, 
+                 legend='brief', alpha=.75, 
+                 lw=0.75, 
+                 dashes=[(),(3, 0.75)], 
                  data=melt_df, 
-                 #facet_kws=dict(sharey=False)
+                 facet_kws=dict(sharey=True),
+                 height=3, aspect=3/3
                  )
-    #g.axes[0,1].set_ylim(0,2)#0.95*np.max(melt_df['value']))
-    #g.axes[0,0].set_ylim(0.6,1)
+    for c in range(g.axes.shape[1]):
+        g.axes[0,c].set_title(g.axes[0,c].get_title().split('model = ')[1]) 
+        for r in range(1, g.axes.shape[0]):
+            g.axes[r,c].set_title('') 
+    for pos, met in enumerate(melt_df['depth'].unique()):
+        g.axes[pos,0].set_ylabel(f'accuracy - {met}')
     g.savefig(os.path.join(image_dir, 'loss.png'), dpi=1000)
     plt.close('all')
 

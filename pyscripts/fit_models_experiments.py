@@ -14,6 +14,8 @@ from keras.optimizers import SGD
 from keras import optimizers 
 from keras.preprocessing.image import ImageDataGenerator
 
+from tensorflow import set_random_seed
+
 import pandas as pd
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -99,7 +101,8 @@ def train_frozen(model_name, depth_level, weights,
                         train_dir, valid_dir, test_dir, 
                         image_dir, 
                         model_dir,
-                        epochs):
+                        epochs, 
+                        opt):
     """
     function that freezes a cnn model to extract features and train a small
     classification NN on top of the extracted features. 
@@ -114,6 +117,7 @@ def train_frozen(model_name, depth_level, weights,
     :image_dir: image output location
     :model_dir: model output location
     :epochs: number of epochs to train
+    :opt:  string that maps to keras optmizer to be used for training
     :return: 
         the test set accuracy
         the test set confusion matrix
@@ -125,9 +129,21 @@ def train_frozen(model_name, depth_level, weights,
     # common trainig parameters:
     ########
     batch_size = 16
-    lrate = 1e-3
+
     loss = 'categorical_crossentropy'
-    opt = SGD(lr=lrate, momentum=0.9, clipvalue=5.)
+    
+    opts = {'SGD (1e-2)'          : optimizers.SGD(lr=0.01, momentum=0.0, clipvalue=5.), 
+        'SGD (1e-2) momentum 0.5' : optimizers.SGD(lr=0.01, momentum=0.5, clipvalue=5.), 
+        'SGD (1e-2) momentum 0.9' : optimizers.SGD(lr=0.01, momentum=0.9, clipvalue=5.), 
+        'SGD (1e-3)'              : optimizers.SGD(lr=0.001, momentum=0.0, clipvalue=5.), 
+        'SGD (1e-3) momentum 0.5' : optimizers.SGD(lr=0.001, momentum=0.5, clipvalue=5.), 
+        'SGD (1e-3) momentum 0.9' : optimizers.SGD(lr=0.001, momentum=0.9, clipvalue=5.), 
+        'RMSprop (1e-3) '         : optimizers.RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=0.0),
+        'Adam (1e-2)'             : optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
+        'Adamax (2e-3)'           : optimizers.Adamax(lr=0.002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0)
+        }
+    opt = opts[opt]
+
     
     # load the base model:
     base_model = load_part_model(model_name, depth_level, weights)
@@ -203,7 +219,8 @@ def train_frozen(model_name, depth_level, weights,
 
     pred = model.predict_generator(generator, 
                                     verbose=0, 
-                                    steps=len(generator))
+                                    steps=len(generator)
+									)
     
      # save results as dataframe
     df = pd.DataFrame(pred, columns=generator.class_indices.keys())
@@ -257,7 +274,7 @@ def fine_tune(model_filename, model_name, depth_level,
     :image_dir: image output location
     :model_dir: model output location
     :epochs: number of epochs to train
-    :opt:   keras optmizer to be used for training
+    :opt: string that maps to  keras optmizer to be used for training
     :return: 
         the entire trained model
         the test set accuracy
@@ -274,7 +291,7 @@ def fine_tune(model_filename, model_name, depth_level,
     # save the number of classes:
     num_classes = len(os.listdir(train_dir))
     
-    opts = {'SGD (1e-2)'              : optimizers.SGD(lr=0.01, momentum=0.0, clipvalue=5.), 
+    opts = {'SGD (1e-2)'          : optimizers.SGD(lr=0.01, momentum=0.0, clipvalue=5.), 
         'SGD (1e-2) momentum 0.5' : optimizers.SGD(lr=0.01, momentum=0.5, clipvalue=5.), 
         'SGD (1e-2) momentum 0.9' : optimizers.SGD(lr=0.01, momentum=0.9, clipvalue=5.), 
         'SGD (1e-3)'              : optimizers.SGD(lr=0.001, momentum=0.0, clipvalue=5.), 
@@ -366,8 +383,9 @@ def fine_tune(model_filename, model_name, depth_level,
 
     pred = model.predict_generator(generator, 
                                     verbose=0, 
-                                    steps=len(generator))
-    
+                                    steps=len(generator)
+									)
+
      # save results as dataframe
     df = pd.DataFrame(pred, columns=generator.class_indices.keys())
     df['file'] = generator.filenames
@@ -402,22 +420,39 @@ def fine_tune(model_filename, model_name, depth_level,
 if __name__ == "__main__":
     # set the seed for repetition purposes 
     random.seed(0)
+    np.random.seed(0)
+    set_random_seed(0)
     
     data_dir = '../data'
     image_dir = '../images'
     model_dir = '../models'
     
-    datasets_dir = [os.path.join(data_dir, 'PatternNet'), 
+    datasets_dir = [
+                    os.path.join(data_dir, 'PatternNet'), 
                     os.path.join(data_dir, 'AID'),
-                    os.path.join(data_dir, 'UCMerced'),]
+                    os.path.join(data_dir, 'UCMerced'),
+                    ]
+    
+    # helpers dictionary to create an easier to plot dataframe later
+    depths_dict = {'shallow' : 1, 
+                   'intermediate' : 2, 
+                   'deep' : 3, 
+                    }
+    data_mod_dict = {'PatternNet'   : +0.1, 
+                     'AID'          : +0.0, 
+                     'UCMerced'     : -0.1, 
+                    }
+
+
     
     models = ['VGG19', 'InceptionV3']
-    depth_levels = [#'shallow', 
+    depth_levels = [
+                    #'shallow', 
                     #'intermediate', 
                     'deep'
                     ]
+    opt = 'SGD (1e-3) momentum 0.9'
     epochs = 2
-    epochs_random_init = 2
     
     # test different models:
     acc_dict={}
@@ -431,6 +466,7 @@ if __name__ == "__main__":
                 train_dir = os.path.join(dataset, 'images_train')
                 valid_dir = os.path.join(dataset, 'images_validation')
                 test_dir  = os.path.join(dataset, 'images_test')
+
                 acc, _, _ = train_frozen(model, 
                                          depth_level, 
                                          weights, 
@@ -440,21 +476,69 @@ if __name__ == "__main__":
                                          test_dir, 
                                          image_dir, 
                                          model_dir,
-                                         epochs)
+                                         epochs, 
+                                         opt)
                 
                 print(f'{acc:.2f}')
                 acc_dict[dict_counter]={"model"    :model,
                                          "depth"   :depth_level,
-                                         "dataset" :dataset,
+                                         "depth_sw":depths_dict[depth_level] + data_mod_dict[data_in],
+                                         "dataset" :data_in,
                                          "mode"    :'feature extraction',
                                          "accuracy":acc}
                 dict_counter+=1
                 reset_keras()
                 ###############################################################
                 # fine tune:
+                # to mantain the same overall epochs used in training, 
+                # first fine tune using half of the total epochs (save the history):
+                _, _, hist = train_frozen(model, 
+                                         depth_level, 
+                                         weights, 
+                                         data_in,
+                                         train_dir,
+                                         valid_dir, 
+                                         test_dir, 
+                                         image_dir, 
+                                         model_dir,
+                                         epochs//2, 
+                                         opt)
+                
+                # now, fine tune the model for the "second half" of the 
+                # epochs:
                 model_filename = f"{model}_{depth_level}_{data_in}_frozen.hdf5"
-                lrate = 1e-4
-                opt = SGD(lr=lrate, momentum=0.9, clipvalue=5.)
+                
+                acc, _, h2 = fine_tune(model_filename, model, depth_level,
+                                             data_in,
+                                             train_dir,
+                                             valid_dir, 
+                                             test_dir, 
+                                             image_dir, 
+                                             model_dir,
+                                             epochs//2, 
+                                             opt)
+                
+                for metr in h2.history:
+                    print(metr)
+                    for jj in h2.history[metr]:
+                        hist.history[metr].append(jj)
+
+                # plot the history:
+                plot_history(hist, model, depth_level, data_in, 'fine_tune', image_dir)
+                
+                print(f'{acc:.2f}')
+                acc_dict[dict_counter]={"model"   :model,
+                                         "depth"   :depth_level,
+                                         "depth_sw":depths_dict[depth_level] + data_mod_dict[data_in],                                         
+                                         "dataset" :data_in,
+                                         "mode"    :'fine tune',
+                                         "accuracy":acc}
+                dict_counter+=1
+                reset_keras()
+                ###############################################################
+                # random initialization:
+                model_filename = None
+
                 acc, _, _ = fine_tune(model_filename, model, depth_level,
                                              data_in,
                                              train_dir,
@@ -464,33 +548,11 @@ if __name__ == "__main__":
                                              model_dir,
                                              epochs, 
                                              opt)
-                
                 print(f'{acc:.2f}')
                 acc_dict[dict_counter]={"model"   :model,
                                          "depth"   :depth_level,
-                                         "dataset" :dataset,
-                                         "mode"    :'fine tune',
-                                         "accuracy":acc}
-                dict_counter+=1
-                reset_keras()
-                ###############################################################
-                # random initialization:
-                model_filename = None
-                lrate = 1e-3
-                opt = SGD(lr=lrate, momentum=0.9, clipvalue=5.)
-                acc, _, _ = fine_tune(model_filename, model, depth_level,
-                                             data_in,
-                                             train_dir,
-                                             valid_dir, 
-                                             test_dir, 
-                                             image_dir, 
-                                             model_dir,
-                                             epochs_random_init, 
-                                             opt)
-                print(f'{acc:.2f}')
-                acc_dict[dict_counter]={"model"   :model,
-                                         "depth"   :depth_level,
-                                         "dataset" :dataset,
+                                         "depth_sw":depths_dict[depth_level] + data_mod_dict[data_in],                                         
+                                         "dataset" :data_in,
                                          "mode"    :'randomly initialized weights',
                                          "accuracy":acc}
                 dict_counter+=1
@@ -507,14 +569,43 @@ if __name__ == "__main__":
     
     # convert accuracy to dataframe    
     df_acc = pd.DataFrame.from_dict(acc_dict, orient='index',)
+    # create a column to be used for ploting with slightly different
+    #"depth" values:
+    # Create the dictionary 
+    depths_dict = {'shallow' : 1, 
+                   'intermediate' : 2, 
+                   'deep' : 3, 
+                    }
+    
+    df_acc['depth_n'] = df_acc['depth'].map(depths_dict) 
+    df_acc['depth_sw'] = df_acc['depth_n']
     
     # plot accuracy:
-    plt.figure(figsize=(2, 2), )
-    sns.relplot(x="depth", y="accuracy", hue="mode", style="model",
-                    col="dataset",
-                    s = 200,
-                    legend='brief', alpha=.75,
-                    data=df_acc)
-    plt.savefig(os.path.join(image_dir, 'accuracy_all'), dpi=1000)
+    plt.style.use('fivethirtyeight')
+    #sns.set_style("whitegrid")
+    sns.set_context("paper")
+    
+    g = sns.relplot(x="depth_sw", y="accuracy", hue="mode", style="dataset", 
+                    col="model", 
+                    #kind="swarm",
+                    s = 10,  
+                    legend='full', alpha=.75,
+                    data=df_acc, 
+                    height=3, aspect=3/3)
+    
+    for c in range(g.axes.shape[1]):
+        g.axes[0,c].set_title(g.axes[0,c].get_title().split('model = ')[1]) 
+        g.axes[0,c].set_xlabel('depth') 
+        g.axes[0,c].set_xticks([val for val in depths_dict.values()])
+        g.axes[0,c].set(xticklabels=[k for k in depths_dict], 
+                        xlim=(min([val for val in depths_dict.values()])-.3, 
+                              max([val for val in depths_dict.values()])+.3))
+
+    plt.savefig(os.path.join(image_dir, 'accuracy_all'), 
+                facecolor="white",
+                dpi=1000)
     plt.close('all')
     
+    # save the dataframes:
+    df_acc.to_csv(os.path.join(data_dir, 
+                               f'df_acc_{"_".join(df_acc.depth.unique().tolist())}.csv'))
