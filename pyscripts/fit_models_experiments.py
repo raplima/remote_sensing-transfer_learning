@@ -569,16 +569,6 @@ if __name__ == "__main__":
     
     # convert accuracy to dataframe    
     df_acc = pd.DataFrame.from_dict(acc_dict, orient='index',)
-    # create a column to be used for ploting with slightly different
-    #"depth" values:
-    # Create the dictionary 
-    depths_dict = {'shallow' : 1, 
-                   'intermediate' : 2, 
-                   'deep' : 3, 
-                    }
-    
-    df_acc['depth_n'] = df_acc['depth'].map(depths_dict) 
-    df_acc['depth_sw'] = df_acc['depth_n']
     
     # plot accuracy:
     plt.style.use('fivethirtyeight')
@@ -588,7 +578,7 @@ if __name__ == "__main__":
     g = sns.relplot(x="depth_sw", y="accuracy", hue="mode", style="dataset", 
                     col="model", 
                     #kind="swarm",
-                    s = 10,  
+                    s = 20,  
                     legend='full', alpha=.75,
                     data=df_acc, 
                     height=3, aspect=3/3)
