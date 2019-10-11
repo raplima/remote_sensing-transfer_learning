@@ -1,0 +1,55 @@
+model,depth,depth_sw,dataset,mode,accuracy
+VGG19,shallow,1.1,PatternNet,feature extraction,0.816776316
+VGG19,shallow,1.1,PatternNet,fine tune,0.942927632
+VGG19,shallow,1.1,PatternNet,randomly initialized weights,0.967269737
+VGG19,intermediate,2.1,PatternNet,feature extraction,0.850164474
+VGG19,intermediate,2.1,PatternNet,fine tune,0.026315789
+VGG19,intermediate,2.1,PatternNet,randomly initialized weights,0.026315789
+VGG19,deep,3.1,PatternNet,feature extraction,0.983059211
+VGG19,deep,3.1,PatternNet,fine tune,0.026315789
+VGG19,deep,3.1,PatternNet,randomly initialized weights,0.026315789
+InceptionV3,shallow,1.1,PatternNet,feature extraction,0.729440789
+InceptionV3,shallow,1.1,PatternNet,fine tune,0.991776316
+InceptionV3,shallow,1.1,PatternNet,randomly initialized weights,0.983223684
+InceptionV3,intermediate,2.1,PatternNet,feature extraction,0.944243421
+InceptionV3,intermediate,2.1,PatternNet,fine tune,0.993092105
+InceptionV3,intermediate,2.1,PatternNet,randomly initialized weights,0.986348684
+InceptionV3,deep,3.1,PatternNet,feature extraction,0.898519737
+InceptionV3,deep,3.1,PatternNet,fine tune,0.990296053
+InceptionV3,deep,3.1,PatternNet,randomly initialized weights,0.986184211
+VGG19,shallow,1,AID,feature extraction,0.3175
+VGG19,shallow,1,AID,fine tune,0.667
+VGG19,shallow,1,AID,randomly initialized weights,0.779
+VGG19,intermediate,2,AID,feature extraction,0.313
+VGG19,intermediate,2,AID,fine tune,0.031
+VGG19,intermediate,2,AID,randomly initialized weights,0.038
+VGG19,deep,3,AID,feature extraction,0.8885
+VGG19,deep,3,AID,fine tune,0.037
+VGG19,deep,3,AID,randomly initialized weights,0.034
+InceptionV3,shallow,1,AID,feature extraction,0.6815
+InceptionV3,shallow,1,AID,fine tune,0.9205
+InceptionV3,shallow,1,AID,randomly initialized weights,0.796
+InceptionV3,intermediate,2,AID,feature extraction,0.832
+InceptionV3,intermediate,2,AID,fine tune,0.9405
+InceptionV3,intermediate,2,AID,randomly initialized weights,0.85
+InceptionV3,deep,3,AID,feature extraction,0.7505
+InceptionV3,deep,3,AID,fine tune,0.9275
+InceptionV3,deep,3,AID,randomly initialized weights,0.8665
+VGG19,shallow,0.9,UCMerced,feature extraction,0.126190476
+VGG19,shallow,0.9,UCMerced,fine tune,0.276190476
+VGG19,shallow,0.9,UCMerced,randomly initialized weights,0.795238095
+VGG19,intermediate,1.9,UCMerced,feature extraction,0.321428571
+VGG19,intermediate,1.9,UCMerced,fine tune,0.047619048
+VGG19,intermediate,1.9,UCMerced,randomly initialized weights,0.047619048
+VGG19,deep,2.9,UCMerced,feature extraction,0.942857143
+VGG19,deep,2.9,UCMerced,fine tune,0.047619048
+VGG19,deep,2.9,UCMerced,randomly initialized weights,0.047619048
+InceptionV3,shallow,0.9,UCMerced,feature extraction,0.754761905
+InceptionV3,shallow,0.9,UCMerced,fine tune,0.883333333
+InceptionV3,shallow,0.9,UCMerced,randomly initialized weights,0.85952381
+InceptionV3,intermediate,1.9,UCMerced,feature extraction,0.895238095
+InceptionV3,intermediate,1.9,UCMerced,fine tune,0.84047619
+InceptionV3,intermediate,1.9,UCMerced,randomly initialized weights,0.864285714
+InceptionV3,deep,2.9,UCMerced,feature extraction,0.854761905
+InceptionV3,deep,2.9,UCMerced,fine tune,0.90952381
+InceptionV3,deep,2.9,UCMerced,randomly initialized weights,0.797619048
