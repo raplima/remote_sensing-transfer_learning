@@ -1,6 +1,6 @@
 # remote_sensing-transfer_learning
 
-Code containing scripts used for analysis of transfer learning for remote sensing images. Details are available in the [Convolutional Neural Network for Remote-Sensing Scene Classification: Transfer Learning Analysis](https://www.mdpi.com/2072-4292/12/1/86).
+Code containing scripts used for analysis of transfer learning for remote sensing images. Details are available in the [Convolutional Neural Network for Remote-Sensing Scene Classification: Transfer Learning Analysis](https://www.mdpi.com/2072-4292/12/1/86) published in December 2019.
 
 @Article{rs12010086,
 AUTHOR = {Pires de Lima, Rafael and Marfurt, Kurt},
