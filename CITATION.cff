@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Pires de Lima"
+  given-names: "Rafael"
+  orcid: "https://orcid.org/0000-0002-6747-1291"
+- family-names: "Marfurt"
+  given-names: "Kurt"
+title: "Convolutional Neural Network for Remote-Sensing Scene Classification: Transfer Learning Analysis"
+url: "https://github.com/raplima/remote_sensing-transfer_learning"
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Pires de Lima"
+    given-names: "Rafael"
+    orcid: "https://orcid.org/0000-0002-5207-0380"
+  - family-names: "Marfurt"
+    given-names: "Kurt"
+  doi: "10.3390/rs12010086"
+  journal: "Remote Sensing"
+  title: "Convolutional Neural Network for Remote-Sensing Scene Classification: Transfer Learning Analysis"
+  volume: 12
+  issue: 1
+  year: 2020
